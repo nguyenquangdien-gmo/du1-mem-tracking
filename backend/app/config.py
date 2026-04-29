@@ -20,7 +20,10 @@ class Settings(BaseSettings):
     database_ssl_ca: str = ""
     database_ssl: bool = False
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", "/etc/secrets/.env"), 
+        extra="ignore"
+    )
 
     @property
     def cors_origin_list(self) -> List[str]:
