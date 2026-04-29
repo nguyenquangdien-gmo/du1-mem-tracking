@@ -24,7 +24,18 @@ def get_settings(db: Session = Depends(get_db), current_user=Depends(get_current
     # or just admin for both. The user said: "cho phép admin cấu hình" (allow admin to configure).
     settings = db.query(SystemSettings).first()
     if not settings:
-        raise HTTPException(status_code=404, detail="Settings not found")
+        # Return default values if not exists
+        return {
+            "success": True,
+            "data": {
+                "idle_report_enabled": True,
+                "idle_report_morning_time": "08:00",
+                "idle_report_evening_time": "17:00",
+                "late_report_enabled": True,
+                "late_report_time": "18:00",
+                "chatops_pm_group_id": None,
+            }
+        }
     
     return {
         "success": True,
@@ -45,7 +56,9 @@ def update_settings(data: SettingsUpdate, db: Session = Depends(get_db), current
         
     settings = db.query(SystemSettings).first()
     if not settings:
-        raise HTTPException(status_code=404, detail="Settings not found")
+        settings = SystemSettings()
+        db.add(settings)
+        db.flush() # Get an ID
         
     settings.idle_report_enabled = data.idle_report_enabled
     settings.idle_report_morning_time = data.idle_report_morning_time

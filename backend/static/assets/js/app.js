@@ -32,9 +32,11 @@ const DashboardUI = {
 
     loadRecentProjects: async () => {
         const container = document.getElementById('dashboard-project-list');
+        if (!container) return;
+        
         try {
             const resp = await api.get('/projects?limit=5');
-            if (resp?.success) {
+            if (resp?.success && resp.data && resp.data.length > 0) {
                 container.innerHTML = resp.data.map(p => `
                     <a href="projects.html?id=${p.id}" class="list-group-item list-group-item-action border-0 px-0 d-flex justify-content-between align-items-center">
                         <div>
@@ -49,16 +51,23 @@ const DashboardUI = {
                         </div>
                         <i class="bi bi-chevron-right text-secondary"></i>
                     </a>
-                `).join('') || '<div class="text-center py-4 text-muted">Chưa có dự án nào</div>';
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted">Chưa có dự án nào</div>';
             }
-        } catch (err) { container.innerHTML = '<div class="text-danger">Lỗi tải dữ liệu</div>'; }
+        } catch (err) { 
+            console.error('Failed to load recent projects', err);
+            container.innerHTML = '<div class="text-center py-4 text-danger">Không thể tải dữ liệu</div>'; 
+        }
     },
 
     loadAvailableMembers: async () => {
         const container = document.getElementById('dashboard-available-members');
+        if (!container) return;
+
         try {
             const resp = await api.get('/members?available_only=true');
-            if (resp?.success) {
+            if (resp?.success && resp.data && resp.data.length > 0) {
                 const sorted = [...resp.data].sort((a, b) => {
                     const nameA = a.full_name.trim().split(/\s+/).pop().toLowerCase();
                     const nameB = b.full_name.trim().split(/\s+/).pop().toLowerCase();
@@ -77,9 +86,14 @@ const DashboardUI = {
                             <div class="small text-secondary text-truncate">${UI.esc(m.department_code || 'N/A')}</div>
                         </div>
                     </div>
-                `).join('') || '<div class="text-center py-4 text-muted">Chưa có thành viên nào</div>';
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted">Chưa có thành viên nào rảnh</div>';
             }
-        } catch (err) { container.innerHTML = '<div class="text-danger">Lỗi tải dữ liệu</div>'; }
+        } catch (err) { 
+            console.error('Failed to load available members', err);
+            container.innerHTML = '<div class="text-center py-4 text-danger">Không thể tải dữ liệu</div>'; 
+        }
     },
 
     renderSearchResults: function(data) {
