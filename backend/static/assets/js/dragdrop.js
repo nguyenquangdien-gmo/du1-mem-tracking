@@ -67,69 +67,87 @@ const ProjectsUI = {
             let projectsToRender = resp.data;
             if (filterId) projectsToRender = resp.data.filter(p => p.id == filterId);
 
-            container.innerHTML = projectsToRender.map(p => {
-                const statusClass = `status-${p.status}`;
-                return `
-                <div class="col-md-6 col-xl-4 dropzone-col mb-4">
-                    <div class="glass-card project-card h-100 border-2 shadow-sm" data-id="${p.id}" data-end-date="${p.expected_end_date || ''}">
-                        <div class="p-4 h-100 d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <div class="badge ${statusClass} rounded-pill">${p.status.toUpperCase()}</div>
-                                        ${p.is_important ? '<i class="bi bi-star-fill text-warning" title="Dự án quan trọng"></i>' : ''}
+            if (projectsToRender.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="glass-card p-5">
+                            <i class="bi bi-folder-x text-secondary mb-3" style="font-size: 3rem;"></i>
+                            <h4 class="text-secondary">Chưa có dự án nào</h4>
+                            <p class="text-muted mb-4">Hãy bắt đầu bằng cách tạo dự án mới cho tổ chức của bạn.</p>
+                            ${UI.hasPermission('write', 'projects') ? `
+                                <button class="btn btn-primary rounded-pill px-4" onclick="ProjectsUI.openProjectModal()">
+                                    <i class="bi bi-plus-lg me-2"></i>Tạo dự án mới
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = projectsToRender.map(p => {
+                    const statusClass = `status-${p.status}`;
+                    return `
+                    <div class="col-md-6 col-xl-4 dropzone-col mb-4">
+                        <div class="glass-card project-card h-100 border-2 shadow-sm" data-id="${p.id}" data-end-date="${p.expected_end_date || ''}">
+                            <div class="p-4 h-100 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <div class="badge ${statusClass} rounded-pill">${p.status.toUpperCase()}</div>
+                                            ${p.is_important ? '<i class="bi bi-star-fill text-warning" title="Dự án quan trọng"></i>' : ''}
+                                        </div>
+                                        <h5 class="fw-bold text-dark mb-1">${UI.esc(p.name)}</h5>
+                                        <div class="small text-secondary"><i class="bi bi-building me-1"></i>${UI.esc(p.department_name || 'N/A')}</div>
                                     </div>
-                                    <h5 class="fw-bold text-dark mb-1">${UI.esc(p.name)}</h5>
-                                    <div class="small text-secondary"><i class="bi bi-building me-1"></i>${UI.esc(p.department_name || 'N/A')}</div>
-                                </div>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light rounded-pill" type="button" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                        <li><a class="dropdown-item" href="#" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}")'>🔍 Chi tiết dự án</a></li>
-                                        ${UI.hasPermission('write', 'projects') ? `
-                                            <li><a class="dropdown-item" href="#" onclick='ProjectsUI.openProjectModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️ Sửa thông tin</a></li>
-                                            <li><a class="dropdown-item text-danger" href="#" onclick="ProjectsUI.deleteProject(${p.id})">🗑️ Xóa dự án</a></li>
-                                        ` : ''}
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div class="project-info mt-2 pb-3 border-bottom border-light">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center me-2" style="width:24px;height:24px;font-size:0.7rem">
-                                        <i class="bi bi-person-badge"></i>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light rounded-pill" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item" href="#" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}")'>🔍 Chi tiết dự án</a></li>
+                                            ${UI.hasPermission('write', 'projects') ? `
+                                                <li><a class="dropdown-item" href="#" onclick='ProjectsUI.openProjectModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️ Sửa thông tin</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="ProjectsUI.deleteProject(${p.id})">🗑️ Xóa dự án</a></li>
+                                            ` : ''}
+                                        </ul>
                                     </div>
-                                    <span class="small text-dark fw-medium">PM: ${UI.esc(p.pm_name || 'Chưa phân công')}</span>
                                 </div>
-                                <div class="d-flex gap-3 small text-secondary mb-2">
-                                    <span><i class="bi bi-calendar-event me-1"></i>${UI.fmtDate(p.start_date)}</span>
-                                    <span><i class="bi bi-calendar-check me-1"></i>${UI.fmtDate(p.expected_end_date)}</span>
+                                
+                                <div class="project-info mt-2 pb-3 border-bottom border-light">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center me-2" style="width:24px;height:24px;font-size:0.7rem">
+                                            <i class="bi bi-person-badge"></i>
+                                        </div>
+                                        <span class="small text-dark fw-medium">PM: ${UI.esc(p.pm_name || 'Chưa phân công')}</span>
+                                    </div>
+                                    <div class="d-flex gap-3 small text-secondary mb-2">
+                                        <span><i class="bi bi-calendar-event me-1"></i>${UI.fmtDate(p.start_date)}</span>
+                                        <span><i class="bi bi-calendar-check me-1"></i>${UI.fmtDate(p.expected_end_date)}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <a href="javascript:;" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}", "tasks-tab")' class="badge bg-light text-dark border rounded-pill fw-normal text-decoration-none" style="font-size:0.65rem">
+                                            <i class="bi bi-list-task text-primary me-1"></i>${p.task_count || 0} tasks
+                                        </a>
+                                        ${p.overdue_task_count !== undefined ? `<a href="javascript:;" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}", "tasks-tab", "overdue")' class="badge ${p.overdue_task_count > 0 ? 'bg-danger' : 'bg-secondary'} rounded-pill fw-normal text-decoration-none text-white" style="font-size:0.65rem"><i class="bi bi-exclamation-triangle me-1"></i>${p.overdue_task_count} trễ</a>` : ''}
+                                    </div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mt-1">
-                                    <a href="javascript:;" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}", "tasks-tab")' class="badge bg-light text-dark border rounded-pill fw-normal text-decoration-none" style="font-size:0.65rem">
-                                        <i class="bi bi-list-task text-primary me-1"></i>${p.task_count || 0} tasks
-                                    </a>
-                                    ${p.overdue_task_count !== undefined ? `<a href="javascript:;" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}", "tasks-tab", "overdue")' class="badge ${p.overdue_task_count > 0 ? 'bg-danger' : 'bg-secondary'} rounded-pill fw-normal text-decoration-none text-white" style="font-size:0.65rem"><i class="bi bi-exclamation-triangle me-1"></i>${p.overdue_task_count} trễ</a>` : ''}
-                                </div>
-                            </div>
 
-                            <div class="p-members my-3 d-flex flex-wrap gap-2 flex-grow-1 p-members-list dropzone" id="p-members-${p.id}" data-id="${p.id}" data-end-date="${p.expected_end_date || ''}" style="min-height:80px">
-                                 <!-- Members -->
-                            </div>
-                            
-                            <div class="mt-auto pt-3 border-top border-light d-flex justify-content-between align-items-center">
-                                <small class="text-secondary opacity-75"><i class="bi bi-plus-circle me-1"></i>Kéo thả member</small>
-                                <a href="javascript:;" class="small fw-bold text-primary text-decoration-none" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}")'>Chi tiết &rarr;</a>
+                                <div class="p-members my-3 d-flex flex-wrap gap-2 flex-grow-1 p-members-list dropzone" id="p-members-${p.id}" data-id="${p.id}" data-end-date="${p.expected_end_date || ''}" style="min-height:80px">
+                                     <!-- Members -->
+                                </div>
+                                
+                                <div class="mt-auto pt-3 border-top border-light d-flex justify-content-between align-items-center">
+                                    <small class="text-secondary opacity-75"><i class="bi bi-plus-circle me-1"></i>Kéo thả member</small>
+                                    <a href="javascript:;" class="small fw-bold text-primary text-decoration-none" onclick='ProjectsUI.showProjectDetails(${p.id}, "${UI.esc(p.name)}")'>Chi tiết &rarr;</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                `;
-            }).join('');
-            projectsToRender.forEach(p => this.loadProjectAssignments(p.id));
-            this.initDragDrop();
+                    `;
+                }).join('');
+                projectsToRender.forEach(p => this.loadProjectAssignments(p.id));
+                this.initDragDrop();
+            }
+
             const autoOpenId = urlParams.get('id');
             const targetTab = urlParams.get('tab') === 'tasks' ? 'tasks-tab' : null;
             const taskFilter = urlParams.get('taskFilter');
