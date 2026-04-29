@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Tracking | Quản lý Role</title>
+    <!-- CSS Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css?v=1.3">
+</head>
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                        <li class="breadcrumb-item active">Quản lý Role</li>
+                    </ol>
+                </nav>
+                <button class="btn btn-primary rounded-pill px-4" id="btn-add-role">+ Thêm Role mới</button>
+            </header>
+
+            <div class="glass-card border-0 shadow-sm p-4">
+                <h3 class="fw-bold mb-4">Danh sách Role / Bộ phận</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Icon</th>
+                                <th>Tên Role</th>
+                                <th>Mô tả</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body">
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Role Modal (Bootstrap) -->
+    <div class="modal fade" id="role-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="role-modal-title">Thêm Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="role-form">
+                        <input type="hidden" id="role-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tên Role</label>
+                            <input type="text" class="form-control rounded-3" id="role-name" placeholder="VD: Technical Lead" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mô tả</label>
+                            <textarea class="form-control rounded-3" id="role-desc" rows="3" placeholder="Mô tả trách nhiệm của role này..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu lại</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Dependencies -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="assets/js/api.js?v=1.3"></script>
+    <script src="assets/js/ui.js?v=1.3"></script>
+    <script src="assets/js/components.js?v=1.3"></script>
+    <script>
+        let roleModal;
+
+        function openModal(role = null) {
+            if (!roleModal) roleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('role-modal'));
+            document.getElementById('role-modal-title').innerText = role ? 'Sửa Role' : 'Thêm Role';
+            document.getElementById('role-id').value = role ? role.id : '';
+            document.getElementById('role-name').value = role ? role.name : '';
+            document.getElementById('role-desc').value = role ? (role.description || '') : '';
+            roleModal.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!auth.isAuthenticated()) { window.location.href = 'login.html'; return; }
+            Components.injectSidebar('nav-roles');
+            loadRoles();
+            document.getElementById('btn-add-role').onclick = () => openModal();
+            document.getElementById('role-form').onsubmit = handleSave;
+        });
+
+        async function loadRoles() {
+            const tbody = document.getElementById('roles-table-body');
+            const resp = await api.get('/roles');
+            if (resp?.success) {
+                const sorted = [...resp.data].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+                tbody.innerHTML = sorted.map(r => `
+                    <tr>
+                        <td style="width:60px"><div class="rounded bg-primary-subtle d-flex align-items-center justify-content-center text-primary fw-bold" style="width:40px;height:40px">🛡️</div></td>
+                        <td class="fw-bold">${UI.esc(r.name)}</td>
+                        <td class="text-secondary small text-truncate" style="max-width:300px">${UI.esc(r.description || 'Không có mô tả')}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" onclick='openModal(${JSON.stringify(r).replace(/'/g, "&apos;")})'>✏️</button>
+                            <button class="btn btn-sm btn-light rounded-circle shadow-sm text-danger" onclick="handleDelete(${r.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" class="text-center py-4">Chưa có Role nào.</td></tr>';
+            }
+        }
+
+        async function handleSave(e) {
+            e.preventDefault();
+            if (!roleModal) roleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('role-modal'));
+            const id = document.getElementById('role-id').value;
+            const payload = {
+                name: document.getElementById('role-name').value,
+                description: document.getElementById('role-desc').value
+            };
+            const resp = id ? await api.patch(`/roles/${id}`, payload) : await api.post('/roles', payload);
+            if (resp?.success) { roleModal.hide(); loadRoles(); }
+            else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+        }
+
+        async function handleDelete(id) {
+            if (await Dialogs.confirm('Bạn có chắc chắn muốn xóa Role này?')) {
+                    const resp = await api.delete(`/roles/${id}`);
+                    if (resp?.success) loadRoles();
+                    else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+                }
+        }
+    </script>
+</body>
+</html>

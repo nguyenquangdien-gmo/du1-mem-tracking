@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình hệ thống - Member Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css">
+    <style>
+        .settings-card { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar dynamically injected here -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar d-flex justify-content-between align-items-center mb-4">
+                <h1 class="page-title mb-0">Cấu hình hệ thống</h1>
+            </div>
+
+            <div class="glass-card settings-card">
+                <form id="settings-form">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-robot me-2"></i>Cấu hình tự động Report ChatOps</h5>
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <div class="p-3 bg-light rounded-3 mb-4">
+                                <label class="form-label fw-bold mb-1">ChatOps PM Group ID</label>
+                                <input type="text" class="form-control mb-2 border-primary" id="chatops-group-id" placeholder="Nhập Channel/Group ID...">
+                                <small class="text-secondary">Tất cả báo cáo tự động sẽ được gửi vào Group này thông qua Assistant Bot.</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 border-end pe-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="idle-report-enabled">
+                                <label class="form-check-label fw-bold" for="idle-report-enabled">Bật báo cáo Idle Member</label>
+                                <div class="small text-muted mb-2">Gửi tự động hàng ngày (T2-T6) cho những thành viên không có task.</div>
+                            </div>
+                            <div class="d-flex gap-3 mb-3">
+                                <div>
+                                    <label class="form-label small fw-semibold">Giờ buổi sáng</label>
+                                    <input type="time" class="form-control" id="idle-report-morning">
+                                </div>
+                                <div>
+                                    <label class="form-label small fw-semibold">Giờ buổi chiều</label>
+                                    <input type="time" class="form-control" id="idle-report-evening">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="runIdleReport(event)">
+                                <i class="bi bi-play-circle me-1"></i> Run Now
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-6 ps-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="late-report-enabled">
+                                <label class="form-check-label fw-bold" for="late-report-enabled">Bật báo cáo Task trễ hạn</label>
+                                <div class="small text-muted mb-2">Gửi tự động hàng ngày cảnh báo các task trễ hạn của các dự án quan trọng.</div>
+                            </div>
+                            <div class="mb-3" style="max-width: 150px;">
+                                <label class="form-label small fw-semibold">Giờ gửi báo cáo</label>
+                                <input type="time" class="form-control" id="late-report-time">
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="runLateReport(event)">
+                                <i class="bi bi-play-circle me-1"></i> Run Now
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-4 pt-4 border-top">
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm">
+                            <i class="bi bi-floppy me-2"></i> Lưu cấu hình
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+        <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/api.js?v=1.5"></script>
+    <script src="assets/js/ui.js?v=1.4"></script>
+    <script src="assets/js/components.js?v=1.4"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!auth.isAuthenticated()) { window.location.href = 'login.html'; return; }
+            
+            const user = auth.getUser();
+            if (user.role !== 'admin') {
+                Dialogs.alert('Bạn không có quyền truy cập trang này.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+
+
+            Components.injectSidebar('nav-settings');
+            
+            // Load data
+            const resp = await api.get('/settings');
+            if (resp && resp.success) {
+                const s = resp.data;
+                document.getElementById('idle-report-enabled').checked = s.idle_report_enabled;
+                document.getElementById('idle-report-morning').value = s.idle_report_morning_time;
+                document.getElementById('idle-report-evening').value = s.idle_report_evening_time;
+                document.getElementById('late-report-enabled').checked = s.late_report_enabled;
+                document.getElementById('late-report-time').value = s.late_report_time;
+                document.getElementById('chatops-group-id').value = s.chatops_pm_group_id || '';
+            }
+            
+            // Handle save
+            document.getElementById('settings-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = {
+                    idle_report_enabled: document.getElementById('idle-report-enabled').checked,
+                    idle_report_morning_time: document.getElementById('idle-report-morning').value,
+                    idle_report_evening_time: document.getElementById('idle-report-evening').value,
+                    late_report_enabled: document.getElementById('late-report-enabled').checked,
+                    late_report_time: document.getElementById('late-report-time').value,
+                    chatops_pm_group_id: document.getElementById('chatops-group-id').value
+                };
+                
+                const r = await api.put('/settings', data);
+                if (r && r.success) {
+                    Dialogs.alert('Lưu cấu hình thành công!');
+                }
+            });
+
+            window.runIdleReport = async (event) => {
+                const btn = event.currentTarget;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang chạy...';
+                btn.disabled = true;
+                try {
+                    const r = await api.post('/settings/run-idle-report');
+                    if (r?.success) Dialogs.alert('Đã gửi báo cáo Idle Member thành công!');
+                    else Dialogs.alert(r?.error?.message || 'Có lỗi xảy ra.');
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            };
+
+            window.runLateReport = async (event) => {
+                const btn = event.currentTarget;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang chạy...';
+                btn.disabled = true;
+                try {
+                    const r = await api.post('/settings/run-late-report');
+                    if (r?.success) Dialogs.alert('Đã gửi báo cáo Task trễ hạn thành công!');
+                    else Dialogs.alert(r?.error?.message || 'Có lỗi xảy ra.');
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            };
+        });
+    </script>
+</body>
+</html>

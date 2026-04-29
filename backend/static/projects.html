@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Tracking | Dự án</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css?v=1.4">
+</head>
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                        <li class="breadcrumb-item active">Dự án</li>
+                    </ol>
+                </nav>
+                <button class="btn btn-primary rounded-pill px-4" id="btn-create-project" data-action="write" data-resource="projects">+ Tạo dự án mới</button>
+            </header>
+
+            <div class="row g-4">
+                <div class="col-lg-3">
+                    <div class="glass-card shadow-sm border-0 sticky-top" style="top: 2rem;">
+                        <h5 class="mb-3">Danh sách thành viên</h5>
+                        <div class="filter-group mb-3 position-relative">
+                            <input type="text" class="form-control form-control-sm rounded-pill ps-5" placeholder="Tìm thành viên..." id="member-filter">
+                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
+                        </div>
+                        <div id="members-pool" class="list-group list-group-flush" style="max-height: 70vh; overflow-y: auto;">
+                            <div class="text-center py-4 text-muted">Đang tải...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-9">
+                    <div id="projects-container" class="row g-4">
+                        <div class="text-center py-5">Đang tải danh sách dự án...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap Modal for Project -->
+    <div class="modal fade" id="project-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modal-title-proj">Tạo dự án mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="project-form">
+                        <input type="hidden" id="proj-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tên dự án</label>
+                            <input type="text" class="form-control rounded-3" id="proj-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mô tả</label>
+                            <textarea class="form-control rounded-3" id="proj-desc" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Phòng ban</label>
+                                <div class="input-group">
+                                    <select class="form-select rounded-start-3" id="proj-dept" required>
+                                        <option value="">Chọn phòng ban...</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary" type="button" onclick="ProjectsUI.quickAddDept()">+</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Project Manager (PM)</label>
+                                <div class="input-group">
+                                    <select class="form-select rounded-start-3" id="proj-pm" required>
+                                        <option value="">Chọn PM...</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary" type="button" onclick="ProjectsUI.quickAddMember()">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Trạng thái</label>
+                                <select class="form-select rounded-3" id="proj-status">
+                                    <option value="planning">Planning (Đang lập kế hoạch)</option>
+                                    <option value="active">Active (Đang hoạt động)</option>
+                                    <option value="on_hold">On Hold (Tạm dừng)</option>
+                                    <option value="completed">Completed (Đã hoàn thành)</option>
+                                    <option value="cancelled">Cancelled (Đã hủy)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3 d-flex align-items-end pb-1">
+                                <div class="form-check form-switch form-check-inline mb-2">
+                                    <input class="form-check-input" type="checkbox" id="proj-is-important">
+                                    <label class="form-check-label fw-bold text-danger" for="proj-is-important">
+                                        <i class="bi bi-star-fill me-1"></i>Dự án quan trọng
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">ChatOps Group ID</label>
+                            <input type="text" class="form-control rounded-3" id="proj-chatops-group-id" placeholder="VD: 6597793d5f991448b1d7d8f5">
+                            <div class="form-text small text-muted">ID nhóm ChatOps để nhận thông báo task cho dự án này.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu lại</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Project Details (Member List) -->
+    <div class="modal fade" id="project-details-modal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="details-project-name">Chi tiết dự án</h5>
+                        <p class="small text-secondary mb-0" id="details-project-meta"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="nav nav-pills nav-fill bg-light p-1 rounded-0" id="projectDetailsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-0" id="members-tab" data-bs-toggle="tab" data-bs-target="#members-pane" type="button" role="tab">👥 Thành viên</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-0" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks-pane" type="button" role="tab" onclick="ProjectsUI.loadProjectTasks()">📋 Tasks</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3" id="projectDetailsTabsContent">
+                        <!-- Members Pane -->
+                        <div class="tab-pane fade show active" id="members-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-3" style="width: 50px;">STT</th>
+                                            <th>Họ & Tên</th>
+                                            <th>Role Dự án</th>
+                                            <th>Mô tả / Ghi chú</th>
+                                            <th>Kết thúc dự kiến</th>
+                                            <th class="text-end pe-3">Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="details-member-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Tasks Pane -->
+                        <div class="tab-pane fade" id="tasks-pane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0 fw-bold me-2 text-nowrap d-none d-sm-block">Danh sách Task</h6>
+                                <div class="d-flex align-items-center gap-2 flex-nowrap ms-auto overflow-auto pb-1" style="max-width: 100%;">
+                                    <select class="form-select form-select-sm rounded-pill w-auto" id="task-filter-status" onchange="ProjectsUI.filterProjectTasks()">
+                                        <option value="">Tất cả Status</option>
+                                        <option value="todo">To Do</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="review">Review</option>
+                                        <option value="done">Done</option>
+                                        <option value="overdue">Trễ hạn</option>
+                                    </select>
+                                    <select class="form-select form-select-sm rounded-pill w-auto" id="task-filter-assignee" onchange="ProjectsUI.filterProjectTasks()" style="max-width: 180px;">
+                                        <option value="">Tất cả Assignee</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3 text-nowrap flex-shrink-0" onclick="ProjectsUI.openTaskModal()" data-action="write" data-resource="projects">+ Thêm Task</button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Tên Task</th>
+                                            <th>Assignee</th>
+                                            <th>Bắt đầu</th>
+                                            <th>Deadline</th>
+                                            <th>Status</th>
+                                            <th>Jira</th>
+                                            <th class="text-end"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="details-task-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Assignment -->
+    <div class="modal fade" id="assignment-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Giao dự án</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="assignment-text" class="text-secondary"></p>
+                    <form id="assignment-form">
+                        <input type="hidden" id="assign-member-id">
+                        <input type="hidden" id="assign-project-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Role trong dự án</label>
+                            <select id="assign-role-select" class="form-select rounded-3 mb-2"></select>
+                            <input type="text" id="assign-role-custom" class="form-control rounded-3" placeholder="Nhập vai trò khác..." style="display:none;">
+                            <div class="text-danger small mt-1" id="role-error" style="display:none;">Vui lòng nhập Role cho thành viên.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mô tả công việc</label>
+                            <textarea class="form-control rounded-3" id="assign-description" rows="2" placeholder="VD: Backend lead, Frontend support..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Ngày kết thúc dự kiến</label>
+                            <input type="date" class="form-control rounded-3" id="assign-end-date" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Xác nhận</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+    </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal fade" id="task-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="task-modal-title">Tạo Task mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="task-form">
+                        <input type="hidden" id="task-id">
+                        <input type="hidden" id="task-project-id">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Tên Task</label>
+                                <input type="text" class="form-control rounded-3" id="task-name" required placeholder="Nhập tên task...">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Mô tả</label>
+                                <textarea class="form-control rounded-3" id="task-description" rows="2" placeholder="Chi tiết công việc..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Ngày bắt đầu</label>
+                                <input type="date" class="form-control rounded-3" id="task-start-date">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Deadline</label>
+                                <input type="date" class="form-control rounded-3" id="task-deadline">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Trạng thái</label>
+                                <select class="form-select rounded-3" id="task-status">
+                                    <option value="todo">To Do</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="review">Review</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Độ ưu tiên</label>
+                                <select class="form-select rounded-3" id="task-priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Giao cho (Assign members)</label>
+                                <div id="task-assignees-list" class="d-flex flex-wrap gap-2 p-2 border rounded-3 bg-light" style="min-height:50px">
+                                    <!-- Member checkboxes will be injected here -->
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Jira Link</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-link-45deg"></i></span>
+                                    <input type="url" class="form-control rounded-end-3" id="task-jira-link" placeholder="https://jira.com/browse/PROJECT-123">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Xác nhận</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <script src="assets/js/api.js?v=1.4"></script>
+    <script src="assets/js/ui.js?v=1.4"></script>
+    <script src="assets/js/components.js?v=1.4"></script>
+    <script src="assets/js/dragdrop.js?v=1.13"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!auth.isAuthenticated()) { window.location.href = 'login.html'; return; }
+            Components.injectSidebar('nav-projects');
+            ProjectsUI.init();
+            UI.applyPermissions();
+
+            // Handle action=create from dashboard
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'create') {
+                ProjectsUI.openProjectModal();
+            }
+        });
+    </script>
+</body>
+</html>

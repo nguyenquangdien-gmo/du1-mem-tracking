@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Tracking | Phòng ban</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css?v=1.3">
+</head>
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                        <li class="breadcrumb-item active">Phòng ban</li>
+                    </ol>
+                </nav>
+                <button class="btn btn-primary rounded-pill px-4" id="btn-add-dept">+ Thêm Phòng ban</button>
+            </header>
+
+            <div class="glass-card border-0 shadow-sm p-4">
+                <h3 class="fw-bold mb-4">Danh sách Phòng ban</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã</th>
+                                <th>Tên Phòng ban</th>
+                                <th>Ngày tạo</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dept-table-body">
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Dept Modal -->
+    <div class="modal fade" id="dept-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="dept-modal-title">Thêm Phòng ban</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dept-form">
+                        <input type="hidden" id="dept-id">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mã Phòng ban (Code)</label>
+                            <input type="text" class="form-control rounded-3" id="dept-code" placeholder="VD: DU1, HR, ACC" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tên Phòng ban</label>
+                            <input type="text" class="form-control rounded-3" id="dept-name" placeholder="VD: Delivery Unit 1" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu lại</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="assets/js/api.js?v=1.3"></script>
+    <script src="assets/js/ui.js?v=1.3"></script>
+    <script src="assets/js/components.js?v=1.3"></script>
+    <script>
+        let deptModal;
+
+        function openModal(dept = null) {
+            if (!deptModal) deptModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('dept-modal'));
+            document.getElementById('dept-modal-title').innerText = dept ? 'Sửa Phòng ban' : 'Thêm Phòng ban';
+            document.getElementById('dept-id').value = dept ? dept.id : '';
+            document.getElementById('dept-code').value = dept ? dept.code : '';
+            document.getElementById('dept-name').value = dept ? dept.name : '';
+            deptModal.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!auth.isAuthenticated()) { window.location.href = 'login.html'; return; }
+            Components.injectSidebar('nav-departments');
+            loadDepts();
+            document.getElementById('btn-add-dept').onclick = () => openModal();
+            document.getElementById('dept-form').onsubmit = handleSave;
+        });
+
+        async function loadDepts() {
+            const tbody = document.getElementById('dept-table-body');
+            const resp = await api.get('/departments');
+            if (resp?.success) {
+                const sorted = [...resp.data].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+                tbody.innerHTML = sorted.map(d => `
+                    <tr>
+                        <td><span class="badge bg-light text-primary border">${UI.esc(d.code)}</span></td>
+                        <td class="fw-bold">${UI.esc(d.name)}</td>
+                        <td class="text-secondary small">${UI.fmtDate(d.created_at)}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" onclick='openModal(${JSON.stringify(d).replace(/'/g, "&apos;")})'>✏️</button>
+                            <button class="btn btn-sm btn-light rounded-circle shadow-sm text-danger" onclick="handleDelete(${d.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" class="text-center py-4">Chưa có Phòng ban nào.</td></tr>';
+            }
+        }
+
+        async function handleSave(e) {
+            e.preventDefault();
+            if (!deptModal) deptModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('dept-modal'));
+            const id = document.getElementById('dept-id').value;
+            const payload = {
+                code: document.getElementById('dept-code').value,
+                name: document.getElementById('dept-name').value
+            };
+            const resp = id ? await api.patch(`/departments/${id}`, payload) : await api.post('/departments', payload);
+            if (resp?.success) { deptModal.hide(); loadDepts(); }
+            else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+        }
+
+        async function handleDelete(id) {
+            if (await Dialogs.confirm('Bạn có chắc chắn muốn xóa Phòng ban này?')) {
+                    const resp = await api.delete(`/departments/${id}`);
+                    if (resp?.success) loadDepts();
+                    else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+                }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Tracking | Thành viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css?v=1.3">
+</head>
+<body>
+    <div class="layout">
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                        <li class="breadcrumb-item active">Thành viên</li>
+                    </ol>
+                </nav>
+                <button class="btn btn-primary rounded-pill px-4" id="btn-add-member" data-action="write" data-resource="members">+ Thêm Thành viên</button>
+            </header>
+
+            <div class="glass-card mb-4 border-0 shadow-sm">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h1 class="h3 mb-0 fw-bold">Danh sách nhân sự</h1>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="filter-group position-relative">
+                            <input type="text" id="member-search" class="form-control rounded-pill ps-5" placeholder="Tìm theo tên, email...">
+                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4" id="members-list">
+                <div class="text-center py-5">Đang tải danh sách...</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Member Modal -->
+    <div class="modal fade" id="member-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modal-title">Thêm thành viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="member-form">
+                        <input type="hidden" id="m-id">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label small fw-bold">Họ và tên</label>
+                                <input type="text" class="form-control rounded-3" id="m-full-name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Email</label>
+                                <input type="email" class="form-control rounded-3" id="m-email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Số điện thoại</label>
+                                <input type="text" class="form-control rounded-3" id="m-phone" placeholder="Không bắt buộc">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Phòng ban</label>
+                            <div class="input-group">
+                                <select id="m-dept-id" class="form-select rounded-start-3" required></select>
+                                <button class="btn btn-outline-primary" type="button" onclick="quickAddDept()">+</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-bold mb-0">Các Role (Kỹ năng/Vị trí)</label>
+                                <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" onclick="quickAddRole()">+ Thêm Role mới</button>
+                            </div>
+                            <div id="roles-multiselect" class="border rounded-3 p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                                <!-- Checkboxes will be injected here -->
+                                <div class="text-muted small">Đang tải roles...</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu lại</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="assets/js/api.js?v=1.3"></script>
+    <script src="assets/js/ui.js?v=1.4"></script>
+    <script src="assets/js/components.js?v=1.4"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!auth.isAuthenticated()) { window.location.href = 'login.html'; return; }
+            Components.injectSidebar('nav-members');
+            loadMembers();
+            UI.applyPermissions();
+            loadDepts();
+            loadRoles();
+            
+            document.getElementById('btn-add-member').onclick = () => openModal();
+            document.getElementById('member-form').onsubmit = handleSave;
+            document.getElementById('member-search').addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase();
+                const cards = document.querySelectorAll('.member-card-col');
+                cards.forEach(card => {
+                    const text = card.innerText.toLowerCase();
+                    card.style.display = text.includes(q) ? 'block' : 'none';
+                });
+            });
+        });
+
+        let availableRoles = [];
+
+        async function loadDepts() {
+            const select = document.getElementById('m-dept-id');
+            const resp = await api.get('/departments');
+            if (resp?.success) {
+                select.innerHTML = '<option value="">-- Chọn phòng ban --</option>' + 
+                    resp.data.map(d => `<option value="${d.id}">${UI.esc(d.name)} (${UI.esc(d.code)})</option>`).join('');
+            }
+        }
+
+        async function loadRoles() {
+            const container = document.getElementById('roles-multiselect');
+            const resp = await api.get('/roles');
+            if (resp?.success) {
+                availableRoles = resp.data;
+                container.innerHTML = resp.data.map(r => `
+                    <div class="form-check mb-1">
+                        <input class="form-check-input role-checkbox" type="checkbox" value="${UI.esc(r.name)}" id="role-chk-${r.id}">
+                        <label class="form-check-label small" for="role-chk-${r.id}">
+                            ${UI.esc(r.name)}
+                        </label>
+                    </div>
+                `).join('') || '<div class="text-muted small">Chưa có role nào trong hệ thống</div>';
+            }
+        }
+
+        async function quickAddDept() {
+            Components.showQuickDept(async (newDept) => {
+                await loadDepts();
+                document.getElementById('m-dept-id').value = newDept.id;
+            });
+        }
+
+        async function quickAddRole() {
+            Components.showQuickRole(async () => {
+                await loadRoles();
+            });
+        }
+
+        async function loadMembers() {
+            const container = document.getElementById('members-list');
+            const resp = await api.get('/members');
+            if (resp?.success) {
+                const sorted = [...resp.data].sort((a, b) => {
+                    const nameA = a.full_name.trim().split(/\s+/).pop().toLowerCase();
+                    const nameB = b.full_name.trim().split(/\s+/).pop().toLowerCase();
+                    const cmp = nameA.localeCompare(nameB, 'vi');
+                    return cmp !== 0 ? cmp : a.full_name.localeCompare(b.full_name, 'vi');
+                });
+
+                container.innerHTML = sorted.map(m => `
+                    <div class="col-md-6 col-xl-4 member-card-col">
+                        <div class="glass-card h-100 border-0 shadow-sm p-4">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="rounded-pill p-3 me-3 text-white fw-bold d-flex align-items-center justify-content-center" 
+                                     style="width:56px; height:56px; font-size:1.4rem; background:${UI.colorFromName(m.full_name)}">
+                                    ${UI.initials(m.full_name)}
+                                </div>
+                                <div class="overflow-hidden">
+                                    <div class="h5 mb-0 fw-bold text-truncate text-dark">${UI.esc(m.full_name)} <i class="bi bi-info-circle text-primary ms-1 cursor-pointer" style="font-size: 1rem; cursor: pointer;" onclick="UI.showMemberDetails(${m.id})"></i></div>
+                                    <div class="small text-secondary text-truncate">${UI.esc(m.email)}</div>
+                                    ${m.phone ? `<div class="small text-secondary text-truncate"><i class="bi bi-telephone me-1"></i>${UI.esc(m.phone)}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="border-top pt-3">
+                                <div class="mb-2">
+                                    <span class="text-secondary small d-block mb-1">Phòng ban</span>
+                                    <span class="fw-bold text-dark small"><i class="bi bi-building me-1"></i>${UI.esc(m.department_name || m.department_code || 'N/A')}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-secondary small d-block mb-1">Các Role</span>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        ${(m.other_roles || []).map(r => `<span class="badge bg-primary-subtle text-primary border border-primary-subtle">${UI.esc(r)}</span>`).join('') || '<span class="text-muted small">Chưa phân role</span>'}
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                                    ${UI.hasPermission('write', 'members') ? `
+                                        <button class="btn btn-sm btn-light rounded-circle shadow-sm" onclick='openModal(${JSON.stringify(m).replace(/'/g, "&apos;")})' title="Sửa">✏️</button>
+                                        <button class="btn btn-sm btn-light rounded-circle shadow-sm text-danger" onclick="handleDelete(${m.id})" title="Xóa">🗑️</button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') || '<div class="col-12 text-center py-5">Chưa có thành viên nào.</div>';
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const q = urlParams.get('q');
+                if (q) {
+                    const searchInput = document.getElementById('member-search');
+                    searchInput.value = q;
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            }
+        }
+
+        let memberModal;
+
+        function openModal(member = null) {
+            if (!memberModal) memberModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('member-modal'));
+            document.getElementById('modal-title').innerText = member ? 'Sửa thành viên' : 'Thêm thành viên';
+            document.getElementById('m-id').value = member ? member.id : '';
+            document.getElementById('m-full-name').value = member ? member.full_name : '';
+            document.getElementById('m-email').value = member ? member.email : '';
+            document.getElementById('m-phone').value = member ? (member.phone || '') : '';
+            document.getElementById('m-dept-id').value = member ? member.department_id : '';
+            
+            // Reset checkboxes
+            const checkboxes = document.querySelectorAll('.role-checkbox');
+            const memberRoles = member ? (member.other_roles || []) : [];
+            checkboxes.forEach(chk => {
+                chk.checked = memberRoles.includes(chk.value);
+            });
+            
+            memberModal.show();
+        }
+
+        async function handleSave(e) {
+            e.preventDefault();
+            const id = document.getElementById('m-id').value;
+            
+            // Collect selected roles
+            const selectedRoles = [];
+            document.querySelectorAll('.role-checkbox:checked').forEach(chk => {
+                selectedRoles.push(chk.value);
+            });
+
+            const payload = {
+                full_name: document.getElementById('m-full-name').value,
+                email: document.getElementById('m-email').value,
+                phone: document.getElementById('m-phone').value || null,
+                department_id: parseInt(document.getElementById('m-dept-id').value),
+                other_roles: selectedRoles
+            };
+            
+            const resp = id ? await api.patch(`/members/${id}`, payload) : await api.post('/members', payload);
+            if (resp?.success) { memberModal.hide(); loadMembers(); }
+            else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+        }
+
+        async function handleDelete(id) {
+            if (await Dialogs.confirm('Bạn có chắc chắn muốn xóa thành viên này?')) {
+                    const resp = await api.delete(`/members/${id}`);
+                    if (resp?.success) loadMembers();
+                    else Dialogs.alert(resp.error?.message || 'Có lỗi xảy ra');
+                }
+        }
+    </script>
+</body>
+</html>
+

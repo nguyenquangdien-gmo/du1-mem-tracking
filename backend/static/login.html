@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Tracking | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/app.css">
+    <style>
+        :root {
+            --glass-blur: blur(20px);
+        }
+        body {
+            background: radial-gradient(circle at top right, #1a1b2e, #0c0d15);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #0d6efd, #6610f2);
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(13, 110, 253, 0.4);
+        }
+        .logo-text {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+        .logo-text span {
+            color: #0d6efd;
+        }
+        .login-header h1 {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .login-header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.95rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            margin-left: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+        }
+        .error-text {
+            color: #ff4d4d;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            min-height: 1.25rem;
+        }
+        .btn-primary {
+            background: #0d6efd;
+            color: #fff;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
+        }
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .login-footer p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.875rem;
+        }
+        .login-bg-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(13, 110, 253, 0.15), transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Member<span>Track</span></span>
+                </div>
+                <h1>Chào mừng trở lại</h1>
+                <p>Đăng nhập để quản lý dự án & nhân sự của bạn</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="username" placeholder="name@company.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                
+                <div id="login-error" class="error-text"></div>
+
+                <button type="submit" class="btn-primary" id="btn-login">
+                    <span>Đăng nhập</span>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>Quên mật khẩu? Liên hệ Admin bộ phận.</p>
+            </div>
+        </div>
+        
+        <div class="login-bg-glow"></div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const loginBtn = document.getElementById('btn-login');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.textContent = '';
+            loginBtn.disabled = true;
+            loginBtn.classList.add('loading');
+
+            const formData = new FormData(loginForm);
+            
+            try {
+                const response = await auth.login(formData);
+                if (response.success) {
+                    window.location.href = 'index.html';
+                } else {
+                    loginError.textContent = response.error?.message || 'Đã có lỗi xảy ra';
+                }
+            } catch (err) {
+                loginError.textContent = 'Không thể kết nối tới server';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+</html>
