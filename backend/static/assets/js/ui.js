@@ -182,14 +182,44 @@ const UI = (() => {
   async function showMemberDetails(memberId) {
     if (window.event) window.event.stopPropagation();
     try {
-        const resp = await api.get('/members/' + memberId);
+        const resp = await api.get('/members/' + memberId + '/assignments');
         if (resp && resp.success) {
-            const m = resp.data;
+            const data = resp.data;
+            const m = data.member;
+            const projects = data.projects || [];
+            
             const existingModal = document.getElementById('global-member-details-modal');
             if (existingModal) existingModal.remove();
             
             const rolesHtml = (m.other_roles || []).map(r => `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">${esc(r)}</span>`).join('');
             
+            let projectsHtml = '';
+            if (projects.length > 0) {
+                projectsHtml = `
+                <div class="mt-4 pt-3 border-top">
+                    <div class="small fw-bold text-secondary text-uppercase mb-2">Dự án đang tham gia (${data.stats.active_projects})</div>
+                    <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                        ${projects.map(p => `
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                <div>
+                                    <div class="fw-bold small text-dark">${esc(p.project_name)}</div>
+                                    <div class="text-secondary" style="font-size: 0.75rem">${esc(p.role || 'Thành viên')}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="badge bg-light text-dark border fw-normal" style="font-size: 0.7rem">${fmtDate(p.expected_end_date)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            } else {
+                projectsHtml = `
+                <div class="mt-4 pt-3 border-top">
+                    <div class="small fw-bold text-secondary text-uppercase mb-2">Dự án đang tham gia</div>
+                    <div class="text-center py-3 bg-light rounded-3 text-muted small">Đang không tham gia dự án nào</div>
+                </div>`;
+            }
+
             const html = `
             <div class="modal fade" id="global-member-details-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
@@ -210,18 +240,19 @@ const UI = (() => {
                                     ${m.phone ? `<div class="text-secondary mt-1"><i class="bi bi-telephone me-1"></i>${esc(m.phone)}</div>` : ''}
                                 </div>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-2">
                                 <div class="col-4 text-secondary small fw-bold">Phòng ban</div>
-                                <div class="col-8 fw-bold">${esc(m.department_name || m.department_code || 'N/A')}</div>
+                                <div class="col-8 fw-bold small">${esc(m.department_name || m.department_code || 'N/A')}</div>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-2">
                                 <div class="col-4 text-secondary small fw-bold">Role chính</div>
-                                <div class="col-8">${esc(m.default_role || 'Chưa có')}</div>
+                                <div class="col-8 small">${esc(m.default_role || 'Chưa có')}</div>
                             </div>
                             <div class="row">
                                 <div class="col-4 text-secondary small fw-bold">Các Role khác</div>
                                 <div class="col-8">${rolesHtml || '<span class="text-muted small">Chưa phân role</span>'}</div>
                             </div>
+                            ${projectsHtml}
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
